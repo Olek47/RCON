@@ -56,8 +56,15 @@ class RconClient():
         if not self.is_connected:
             return
         
+        print('Type .exit to disconnect from the server')
         while True:
             cmd = input('> ')
+            if cmd == '.exit':
+                print('Closing connection...')
+                self.sock.close()
+                self.is_connected = False
+                break
+
             response = self.send_command(cmd)
             print(response)
 
