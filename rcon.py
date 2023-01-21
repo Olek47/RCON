@@ -32,7 +32,15 @@ class RconClient():
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         print(f'Connecting to {host}:{port}...')
-        self.sock.connect((host, port))
+        self.sock.settimeout(10)
+        
+        try:
+            self.sock.connect((host, port))
+        except socket.error as e:
+            print(f'Connection failed: {e}')
+            return
+
+        self.sock.settimeout(None)
 
         print('Logging in...')
         self.send_packet(RconPacket(self.session_id, 3, password.encode()))
