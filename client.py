@@ -10,7 +10,7 @@ def main():
 
     password = input('Password: ')
     
-    client = rcon.RconClient(args.host, args.port, password)
+    client = rcon.Client(args.host, args.port, password)
     client.console()
 
 if __name__ == '__main__':

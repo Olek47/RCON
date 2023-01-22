@@ -3,29 +3,29 @@ import socket
 
 # Inspired by https://github.com/barneygale/MCRcon
 
-class RconIncompletePacket(Exception):
+class IncompletePacket(Exception):
     def __init__(self, remaining):
         self.remaining = remaining
 
-class RconPacketTooBig(Exception):
+class PacketTooBig(Exception):
     def __init__(self, length):
         self.length = length
 
-class RconPacketTooSmall(Exception):
+class PacketTooSmall(Exception):
     def __init__(self, length):
         self.length = length
 
-class RconWrongPadding(Exception):
+class WrongPadding(Exception):
     def __init__(self, padding):
         self.padding = padding
 
-class RconPacket():
+class Packet():
     def __init__(self, session_id, packet_type, payload):
         self.session_id = session_id
         self.packet_type = packet_type
         self.payload = payload
 
-class RconClient():
+class Client():
     def __init__(self, host, port, password):
         self.session_id = 0
         self.is_connected = False
@@ -43,7 +43,7 @@ class RconClient():
         self.sock.settimeout(None)
 
         print('Logging in...')
-        self.send_packet(RconPacket(self.session_id, 3, password.encode()))
+        self.send_packet(Packet(self.session_id, 3, password.encode()))
         response = self.receive_packet()
         if response.session_id != self.session_id:
             print('Login failed!')
@@ -69,7 +69,7 @@ class RconClient():
             print(response)
 
     def send_command(self, command):
-        self.send_packet(RconPacket(self.session_id, 2, command.encode()))
+        self.send_packet(Packet(self.session_id, 2, command.encode()))
         return self.receive_packet().payload.decode()
 
     def send_packet(self, packet):
@@ -78,31 +78,31 @@ class RconClient():
     
     def decode_packet(self, data):
         if len(data) < 14:
-            raise RconIncompletePacket(14)
+            raise IncompletePacket(14)
 
         length = struct.unpack('<i', data[:4])[0] + 4
 
         if length > 4110:
-            raise RconPacketTooBig(length)
+            raise PacketTooBig(length)
 
         if length < 14:
-            raise RconPacketTooSmall(length)
+            raise PacketTooSmall(length)
 
         if len(data) < length:
-            raise RconIncompletePacket(len(data) - length)
+            raise IncompletePacket(len(data) - length)
 
         session_id, packet_type = struct.unpack('<ii', data[4:12])
         payload, padding = data[12:length - 2], data[length - 2:length]
 
         if padding != b'\0\0':
-            raise RconWrongPadding(padding)
+            raise WrongPadding(padding)
 
-        return RconPacket(session_id, packet_type, payload)
+        return Packet(session_id, packet_type, payload)
 
     def receive_packet(self):
         data = self.sock.recv(14)
         while True:
             try:
                 return self.decode_packet(data)
-            except RconIncompletePacket as e:
+            except IncompletePacket as e:
                 data += self.sock.recv(len(data) - e.remaining)
